@@ -1,0 +1,12 @@
+{% extends "__form__.html" %}
+
+{% block form_header %}
+    <h2>Register new account</h2>
+{% endblock %}
+
+{% block form_footer %}
+    <div class="row">
+        Already have an account?
+        <a href="{% url "login" %}">Login here</a>
+    </div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "__layout__.html" %}
+{% load widget_tweaks %}
+
+{% block body %}
+    <div class="container">
+        <div class="row">
+            {% block form_header %}{% endblock %}
+        </div>
+
+        <div class="row">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-warning">{{ error }}</div>
+                {% endfor %}
+
+                {% for hidden_field in form.hidden_fields %}
+                    {{ hidden_field }}
+
+                    {% for error in hidden_field.errors %}
+                        <div class="alert alert-warning">
+                            {{ hidden_field.label }}: {{ error }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+
+                {% for field in form.visible_fields %}
+                    <div class="form-group">
+                        {{ field.label_tag }}
+
+                        {% if form.is_bound %}
+                            {% if field.errors %}
+                                {% render_field field class="form-control is-invalid" %}
+
+                                {% for error in field.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                {% render_field field class="form-control is-valid" %}
+                            {% endif %}
+                        {% else %}
+                            {% render_field field class="form-control" %}
+                        {% endif %}
+
+                        {% if field.help_text %}
+                            <small class="form-text text-muted">
+                                {{ field.help_text }}
+                            </small>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+        </div>
+
+        <div class="row">
+            {% block form_footer %}{% endblock %}
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "__layout__.html" %}
+
+{% block title %}
+    <title>{{ room.name }}</title>
+{% endblock %}
+
+{% block head %}
+    <style>
+        .message-container {
+            width: 100%;
+            min-height: 32px;
+        }
+
+        .message-content {
+            width: fit-content;
+            border-radius: 4px;
+            margin: 4px;
+            padding: 4px;
+        }
+
+        .message-own {
+            background-color: deepskyblue;
+            float: right;
+            margin: auto;
+        }
+
+        .message-foreign {
+            background-color: lightgray;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="container">
+        {% include "__header__.html" %}
+
+        <div id="messages-list" style="overflow-y: scroll; height: auto;"></div>
+
+        <div class="sticky-bottom">
+            <input
+                type="text"
+                id="message-input"
+                placeholder="Type your message..."
+                style="width:90%;"/>
+            <button id="message-send">Send</button>
+        </div>
+    </div>
+
+    <script> /* MESSAGES HANDLING */
+        const messagesList = $('#messages-list');
+        const messageSend = $('#message-send');
+        const messageInput = $('#message-input');
+
+        function clearMessages() {
+            messagesList.empty();
+        }
+
+        function createMessageElem(sender_id, content) {
+            let is_own = sender_id === own_id;
+
+            return $(
+                '<div class=\"message-container\">' +
+                    '<div class=\"message-content message-' + (is_own ? 'own' : 'foreign') + '\">' +
+                        content +
+                    '</div>' +
+                '</div>'
+            );
+        }
+
+        function appendMessage(sender_id, message) {
+            let sender = participants[sender_id] || null;
+            let userStr = sender ? sender : '[unknown]';
+            let messageElem = createMessageElem(sender_id, userStr + ': ' + message);
+
+            messagesList.append(messageElem);
+        }
+
+        sendMessageInput = () => {
+            // remove unnecessary whitespace
+            let msg = messageInput.val().trim();
+
+            // send the message if there is any meaningful message
+            if (msg.length > 0) {
+                socket.send(JSON.stringify({message: msg}));
+            }
+
+            // clear the input
+            messageInput.val('');
+        };
+
+        /* UI HANDLING */
+        messageSend.click(sendMessageInput);
+        messageInput.keypress((event) => {
+            // if enter pressed
+            if (event.which === 13) {
+                sendMessageInput();
+            }
+        });
+
+        /* WEBSOCKET SETUP */
+        const wsUrl = 'ws://' + location.host + '/ws/room/{{ room.id | default:"-1" }}/';
+        let socket = new WebSocket(wsUrl);
+        let participants = [];
+        let own_id = -1;
+
+        // When message from server is recieved
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            console.log(data);
+
+            switch(data.type.toLowerCase()) {
+                case 'init':
+                    own_id = data.user_id;
+                    participants = data.participants;
+
+                    messagesList.empty();
+                    data.messages.forEach(msg => appendMessage(msg.sender_id, msg.content));
+
+                    break;
+
+                case 'participant_joined':
+                    console.log('user ' + data.user_id + ' joined');
+                    break;
+
+                case 'participant_left':
+                    console.log('user ' + data.user_id + ' left');
+                    break;
+
+                case 'message_sent':
+                    appendMessage(data.user_id, data.message);
+                    break;
+            }
+        };
+
+        socket.onerror = (event) => {
+            console.log(event);
+        }
+
+        // When client has been disconnected
+        socket.onclose = (event) => {
+            console.log("Connection lost with code " + event.code);
+        }
+    </script>
+{% endblock %}

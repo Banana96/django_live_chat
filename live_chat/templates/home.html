@@ -1,0 +1,21 @@
+{% extends "__layout__.html" %}
+
+{% block body %}
+    <div class="container">
+        {% include "__header__.html" %}
+
+        <div id="rooms_list">
+            {% if user.available_rooms.all %}
+                <ul class="list-group">
+                    {% for room in user.available_rooms.all %}
+                        <li class="list-group-item">
+                            <a href="{% url "room" room_id=room.id %}">{{ room.name }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                No rooms available. <a href="#">Create one now</a>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

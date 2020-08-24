@@ -1,0 +1,21 @@
+version: "3"
+
+services:
+  redis:
+    image: redis:alpine
+
+  django:
+    environment:
+      - DEBUG=1
+      - SECRET_KEY=debug
+      - DATABASE_URL=sqlite:///db.sqlite3
+      - CACHE_URL=redis://redis:6379
+      - CHANNEL_LAYERS_URLS=redis:6379
+    build: .
+    image: django
+    volumes:
+      - ./:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
